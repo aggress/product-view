@@ -1,27 +1,29 @@
-// Product View — Variant C
-// 20x20 grid of 10px circles (5px gap) on black. Hovering a circle scales it
-// to 20px (2x) while the neighbourhood shrinks with a smooth, distance-based
-// falloff: linear from 50% at 1 cell away to 100% at 3 cells away, using
-// Euclidean distance so diagonal cells shrink a touch less than straight
-// neighbours (organic, radial feel).
-// All motion is CSS transform + a 200ms ease-out transition.
+// Product view — smooth hover zoom
+// 20x20 grid of 40px circles (20px gap) on black. Hovering a circle scales it
+// smoothly to 80px (2x) whilst the neighbourhood shrinks with a smooth,
+// distance-based falloff: a cosine curve from 50% at 1 cell away back to 100%
+// at 3 cells, using Euclidean distance so diagonals shrink a touch less than
+// straight neighbours. Zero slope at both ends of the curve, so no ring of
+// cells visibly "snaps".
+// All motion is CSS transform + a 300ms cubic-bezier(0.4, 0, 0.2, 1)
+// transition (GPU composited).
 
 const COLS = 20;
 const ROWS = 20;
-const PITCH = 15; // 10px circle + 5px gap
 const RADIUS = 3; // cells affected beyond the hovered one
 const FADE_MIN = 0.5; // scale at 1 cell distance
 const FADE_MAX_DIST = 3; // distance at which circles are back to full size
 
 const grid = document.getElementById('grid');
+const stage = document.querySelector('.stage');
 
 const cells = [];
 for (let i = 0; i < ROWS * COLS; i++) {
   const img = document.createElement('img');
   img.className = 'cell';
   img.src = 'assets/circle.png';
-  img.width = 10;
-  img.height = 10;
+  img.width = 40;
+  img.height = 40;
   img.draggable = false;
   img.alt = '';
   grid.appendChild(img);
@@ -37,8 +39,9 @@ function targetScale(r, c, hr, hc) {
   if (dr === 0 && dc === 0) return 2;
   const d = Math.hypot(dr, dc);
   if (d >= FADE_MAX_DIST) return 1;
-  // Linear falloff: FADE_MIN at d=1 -> 1.0 at d=FADE_MAX_DIST.
-  const s = FADE_MIN + (1 - FADE_MIN) * (d - 1) / (FADE_MAX_DIST - 1);
+  // Smooth cosine falloff: FADE_MIN at d=1 -> 1.0 at d=FADE_MAX_DIST.
+  const t = (d - 1) / (FADE_MAX_DIST - 1);
+  const s = 1 - (1 - FADE_MIN) * 0.5 * (1 + Math.cos(Math.PI * t));
   return Math.round(s * 1000) / 1000;
 }
 
@@ -77,8 +80,11 @@ function cellAt(e) {
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
   if (x < 0 || y < 0 || x >= rect.width || y >= rect.height) return null;
-  const c = Math.floor(x / PITCH);
-  const r = Math.floor(y / PITCH);
+  // Rendered pitch (60px at full size). Derived from the rect so hover
+  // tracking stays correct if the grid is scaled to fit the viewport.
+  const pitch = rect.width / COLS;
+  const c = Math.floor(x / pitch);
+  const r = Math.floor(y / pitch);
   if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return null;
   return { r, c };
 }
@@ -96,3 +102,17 @@ grid.addEventListener('mouseleave', () => {
   current = null;
   clearAll();
 });
+
+// The full-size grid is 1180x1180px; scale the whole stage down (uniformly)
+// when it would not fit on screen.
+function fit() {
+  const s = Math.min(
+    1,
+    (window.innerWidth - 32) / stage.offsetWidth,
+    (window.innerHeight - 32) / stage.offsetHeight
+  );
+  stage.style.transform = s < 1 ? 'scale(' + s + ')' : '';
+}
+
+window.addEventListener('resize', fit);
+fit();

@@ -24,16 +24,16 @@ body {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(20, 10px);
-  grid-template-rows: repeat(20, 10px);
-  gap: 5px;
+  grid-template-columns: repeat(20, 40px);
+  grid-template-rows: repeat(20, 40px);
+  gap: 20px;
 }
 
 .cell {
-  width: 10px;
-  height: 10px;
+  width: 40px;
+  height: 40px;
   transform: scale(var(--s, 1));
-  transition: transform 200ms ease-out;
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform;
   user-select: none;
 }
@@ -43,7 +43,7 @@ body {
 }
 
 .caption {
-  font: 12px/1.4 system-ui, sans-serif;
+  font: 13px/1.4 system-ui, sans-serif;
   color: #555;
   letter-spacing: 0.04em;
 }

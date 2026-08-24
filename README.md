@@ -1,20 +1,20 @@
 # product-view
 
-Web page for viewing product images: a 20×20 grid of 10px white circle PNGs
-(5px gap) on a black background. Mousing over a circle smoothly scales it to
-20px whilst the neighbours smoothly shrink. Pure HTML/CSS/JS, no libraries.
+A web page for viewing product images: a 20×20 grid of 40px white circle PNGs
+(20px gap) on a black background. Mousing over a circle smoothly scales it to
+80px (2×) whilst the neighbours smoothly shrink with a distance-based falloff
+(50% at 1 cell away, back to 100% at 3 cells, cosine curve). Pure HTML/CSS/JS,
+no libraries.
 
-The effect uses CSS `transform` with a 200ms `ease-out` transition (GPU
-composited, smooth). A single 40×40px circle asset is used for every cell, so
-all display sizes — including the 20px hover state — are downscaling from
-native resolution and stay crisp.
+Implementation notes:
 
-Three variants of the neighbour-shrink behaviour:
+- All motion is a CSS `transform` with a 300ms `cubic-bezier(0.4, 0, 0.2, 1)`
+  transition (GPU composited, smooth in both grow and shrink).
+- One 160×160px circle asset is used for every cell, so every display size —
+  including the 80px hover state — is downscaling from native resolution and
+  stays crisp even on 2× displays.
+- The full-size grid is 1180×1180px; on smaller screens the whole grid is
+  scaled uniformly to fit the viewport (hover tracking compensates for the
+  scale).
 
-| Variant | Folder       | Neighbour behaviour                                                    |
-| ------- | ------------ | ---------------------------------------------------------------------- |
-| A       | `variant-a/` | the 8 direct neighbours shrink to 50%                                  |
-| B       | `variant-b/` | ring 1 shrinks to 50%, ring 2 to 75%                                   |
-| C       | `variant-c/` | smooth distance-based falloff, 50% at 1 cell to 100% at 3 cells (Euclidean) |
-
-Open any `variant-*/index.html` in a browser.
+Open `variant-c/index.html` in a browser.
