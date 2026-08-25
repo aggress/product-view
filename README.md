@@ -20,9 +20,10 @@ Implementation notes:
   the ~41 cells inside the falloff radius, and only while their transition is
   running (dropped on `transitionend`). This keeps the page light on mobile
   instead of holding 400 persistent compositor layers.
-- Each cell uses its own 160×160px photo (400 unique images, ~2.9MB total),
-  so every display size — including the 80px hover state — is downscaling
-  from native resolution and stays crisp even on 2× displays.
+- Each cell uses its own 160×160px photo (400 unique images, ~2.9MB total)
+  cropped to a circle with `border-radius: 50%`, so every display size —
+  including the 80px hover state — is downscaling from native resolution and
+  stays crisp even on 2× displays.
 - The full-size grid is 1180×1180px; on smaller screens (including phones)
   the whole grid is scaled uniformly to fit the viewport, and the hover/touch
   tracking compensates for the scale by deriving cell size from the rendered
