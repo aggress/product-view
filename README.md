@@ -1,11 +1,13 @@
 # product-view
 
-A web page for viewing product images: a 20×20 grid of 40px white circle PNGs
-(20px gap) on a black background. Mousing over a circle smoothly scales it to
-80px (2×) whilst the neighbours smoothly shrink with a distance-based falloff
+A web page for viewing product images: a 20×20 grid of 40px product photos
+(20px gap) on a black background — each cell is a unique image
+(`assets/img-1..400.jpg`, 160×160 random photos). Mousing over an image
+smoothly scales it to 80px (2×) whilst the neighbours smoothly shrink with a
+distance-based falloff
 (40% at 1 cell away, back to 100% at 5 cells, cosine curve — the 1st–4th
 rings all get a graded shrink, and the 40% first ring keeps a clear edge gap
-around the 2× hovered circle). Pure HTML/CSS/JS, no libraries.
+around the 2× hovered image). Pure HTML/CSS/JS, no libraries.
 
 Implementation notes:
 
@@ -18,9 +20,9 @@ Implementation notes:
   the ~41 cells inside the falloff radius, and only while their transition is
   running (dropped on `transitionend`). This keeps the page light on mobile
   instead of holding 400 persistent compositor layers.
-- One 160×160px circle asset is used for every cell, so every display size —
-  including the 80px hover state — is downscaling from native resolution and
-  stays crisp even on 2× displays.
+- Each cell uses its own 160×160px photo (400 unique images, ~2.9MB total),
+  so every display size — including the 80px hover state — is downscaling
+  from native resolution and stays crisp even on 2× displays.
 - The full-size grid is 1180×1180px; on smaller screens (including phones)
   the whole grid is scaled uniformly to fit the viewport, and the hover/touch
   tracking compensates for the scale by deriving cell size from the rendered

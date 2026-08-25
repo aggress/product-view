@@ -1,5 +1,7 @@
 // Product view — smooth hover zoom
-// 20x20 grid of 40px circles (20px gap) on black. Hovering a circle scales it
+// 20x20 grid of 40px product images (20px gap) on black. Each cell is a
+// unique 160x160 photo (assets/img-1..400.jpg, randomly cropped).
+// Hovering an image scales it
 // smoothly to 80px (2x) whilst the neighbourhood shrinks with a smooth,
 // distance-based falloff: a cosine curve from 40% at 1 cell away back to 100%
 // at 5 cells, so the 1st-4th rings all get a graded shrink (40%, ~49%, 70%,
@@ -26,7 +28,7 @@ const cells = [];
 for (let i = 0; i < ROWS * COLS; i++) {
   const img = document.createElement('img');
   img.className = 'cell';
-  img.src = 'assets/circle.png';
+  img.src = 'assets/img-' + (i + 1) + '.jpg';
   img.width = 40;
   img.height = 40;
   img.draggable = false;
