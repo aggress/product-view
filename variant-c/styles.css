@@ -27,6 +27,7 @@ body {
   grid-template-columns: repeat(20, 40px);
   grid-template-rows: repeat(20, 40px);
   gap: 20px;
+  touch-action: none; /* dragging across the grid drives the zoom, not scrolling */
 }
 
 .cell {
@@ -34,8 +35,14 @@ body {
   height: 40px;
   transform: scale(var(--s, 1));
   transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
   user-select: none;
+}
+
+/* will-change promotes a cell to its own GPU layer, but only while it is
+   actually animating. Applying it to all 400 cells up front keeps 400
+   persistent compositor layers alive, which is too heavy for mobile. */
+.cell.moving {
+  will-change: transform;
 }
 
 .cell.zoomed {

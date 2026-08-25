@@ -1,18 +1,21 @@
 // Product view — smooth hover zoom
 // 20x20 grid of 40px circles (20px gap) on black. Hovering a circle scales it
 // smoothly to 80px (2x) whilst the neighbourhood shrinks with a smooth,
-// distance-based falloff: a cosine curve from 50% at 1 cell away back to 100%
-// at 3 cells, using Euclidean distance so diagonals shrink a touch less than
-// straight neighbours. Zero slope at both ends of the curve, so no ring of
-// cells visibly "snaps".
+// distance-based falloff: a cosine curve from 75% at 1 cell away back to 100%
+// at 5 cells, so the 1st-4th rings all get a subtle graded shrink (75%, ~79%,
+// 87.5%, ~96%) using Euclidean distance, so diagonals shrink a touch less
+// than straight neighbours. Zero slope at both ends of the curve, so no ring
+// of cells visibly "snaps" into or out of the effect.
 // All motion is CSS transform + a 300ms cubic-bezier(0.4, 0, 0.2, 1)
-// transition (GPU composited).
+// transition (GPU composited). Works with mouse hover and touch.
+// GPU layers (will-change) are only held while cells animate, so the page
+// stays light on mobile.
 
 const COLS = 20;
 const ROWS = 20;
-const RADIUS = 3; // cells affected beyond the hovered one
-const FADE_MIN = 0.5; // scale at 1 cell distance
-const FADE_MAX_DIST = 3; // distance at which circles are back to full size
+const RADIUS = 5; // cells affected beyond the hovered one
+const FADE_MIN = 0.75; // scale at 1 cell distance
+const FADE_MAX_DIST = 5; // distance at which circles are back to full size
 
 const grid = document.getElementById('grid');
 const stage = document.querySelector('.stage');
@@ -51,7 +54,7 @@ let current = null;
 function clearAll() {
   for (const el of active) {
     el.style.removeProperty('--s');
-    el.classList.remove('zoomed');
+    el.classList.remove('zoomed', 'moving');
   }
   active = [];
 }
@@ -68,7 +71,7 @@ function apply(hr, hc) {
       if (s !== 1) {
         const el = at(r, c);
         el.style.setProperty('--s', s);
-        if (s > 1) el.classList.add('zoomed');
+        el.classList.add('zoomed', 'moving'); // GPU layer while animating
         active.push(el);
       }
     }
@@ -101,6 +104,27 @@ grid.addEventListener('mousemove', (e) => {
 grid.addEventListener('mouseleave', () => {
   current = null;
   clearAll();
+});
+
+// Touch support (mobile): tapping or dragging across the grid zooms the
+// cell under the finger, the same as mouse hover. The zoom is left in place
+// when the finger lifts so the user can see it.
+function handleTouch(e) {
+  const t = e.touches[0];
+  if (!t) return;
+  const cell = cellAt({ clientX: t.clientX, clientY: t.clientY });
+  const key = cell ? cell.r + ',' + cell.c : null;
+  if (key === current) return;
+  current = key;
+  if (cell) apply(cell.r, cell.c);
+}
+
+grid.addEventListener('touchstart', handleTouch, { passive: true });
+grid.addEventListener('touchmove', handleTouch, { passive: true });
+
+// Once a cell's transform transition settles, drop its GPU layer again.
+grid.addEventListener('transitionend', (e) => {
+  if (e.target.classList) e.target.classList.remove('moving');
 });
 
 // The full-size grid is 1180x1180px; scale the whole stage down (uniformly)
