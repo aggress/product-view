@@ -1,15 +1,19 @@
 // Product view — smooth hover zoom
 // 20x20 grid of 40px product images (20px gap) on black. Each cell is a
 // unique 160x160 photo (assets/img-1..400.jpg, randomly cropped).
-// Hovering an image scales it
-// smoothly to 80px (2x) whilst the neighbourhood shrinks with a smooth,
-// distance-based falloff: a cosine curve from 40% at 1 cell away back to 100%
-// at 5 cells, so the 1st-4th rings all get a graded shrink (40%, ~49%, 70%,
-// ~91%) using Euclidean distance, so diagonals shrink a touch less than
-// straight neighbours. The 40% first ring keeps a 12px edge gap between the
-// 2x hovered circle (40px radius) and its neighbours (8px radius) on the
-// 60px pitch. Zero slope at both ends of the curve, so no ring
-// of cells visibly "snaps" into or out of the effect.
+// Hovering an image smoothly scales it to 160px (4x, 80px radius) whilst the
+// neighbourhood both shrinks and moves outward radially to make room:
+// - scale: cosine falloff from 40% at 1 cell away back to 100% at 5 cells
+//   (40%, ~49%, 70%, ~91%, 100%), Euclidean distance so diagonals shrink a
+//   touch less than straight neighbours.
+// - push: cosine bump of up to 40px at 1 cell away, back to 0 at 5 cells
+//   (40, ~34, 20, ~6, 0), so the straight neighbours end up at 100/154/200/
+//   246/300px from the hovered centre with a minimum 8px edge gap to the
+//   80px-radius highlight.
+// Zero slope at both ends of both curves, so no ring of cells visibly
+// "snaps" into or out of the effect.
+// Hit-testing follows the moved cells: the hovered cell is the nearest
+// transformed cell centre to the pointer (scaled for the fit transform).
 // All motion is CSS transform + a 300ms cubic-bezier(0.4, 0, 0.2, 1)
 // transition (GPU composited). Works with mouse hover and touch.
 // GPU layers (will-change) are only held while cells animate, so the page
@@ -18,8 +22,10 @@
 const COLS = 20;
 const ROWS = 20;
 const RADIUS = 5; // cells affected beyond the hovered one
+const HOVER_SCALE = 4; // hovered cell scales to 160px
 const FADE_MIN = 0.4; // scale at 1 cell distance
-const FADE_MAX_DIST = 5; // distance at which circles are back to full size
+const FADE_MAX_DIST = 5; // distance at which cells are back to full size/position
+const PUSH_MAX = 40; // px outward push of the first ring (clears the 80px-radius highlight)
 
 const grid = document.getElementById('grid');
 const stage = document.querySelector('.stage');
@@ -43,7 +49,7 @@ const at = (r, c) => cells[r * COLS + c];
 function targetScale(r, c, hr, hc) {
   const dr = r - hr;
   const dc = c - hc;
-  if (dr === 0 && dc === 0) return 2;
+  if (dr === 0 && dc === 0) return HOVER_SCALE;
   const d = Math.hypot(dr, dc);
   if (d >= FADE_MAX_DIST) return 1;
   // Smooth cosine falloff: FADE_MIN at d=1 -> 1.0 at d=FADE_MAX_DIST.
@@ -52,12 +58,22 @@ function targetScale(r, c, hr, hc) {
   return Math.round(s * 1000) / 1000;
 }
 
+// Outward push in grid px for a cell at distance d (cells) from the hovered
+// one: cosine bump, PUSH_MAX at d=1 -> 0 at d=FADE_MAX_DIST.
+function targetPush(d) {
+  if (d <= 0 || d >= FADE_MAX_DIST) return 0;
+  const t = (d - 1) / (FADE_MAX_DIST - 1);
+  return PUSH_MAX * 0.5 * (1 + Math.cos(Math.PI * t));
+}
+
 let active = []; // cells currently carrying a non-default scale
 let current = null;
 
 function clearAll() {
   for (const el of active) {
     el.style.removeProperty('--s');
+    el.style.removeProperty('--tx');
+    el.style.removeProperty('--ty');
     el.classList.remove('zoomed', 'moving');
   }
   active = [];
@@ -75,6 +91,14 @@ function apply(hr, hc) {
       if (s !== 1) {
         const el = at(r, c);
         el.style.setProperty('--s', s);
+        // Push the cell radially away from the hovered one (grid px). The
+        // hovered cell itself (d=0) is never pushed.
+        const d = Math.hypot(r - hr, c - hc);
+        const push = targetPush(d);
+        if (push > 0) {
+          el.style.setProperty('--tx', (((c - hc) / d) * push) + 'px');
+          el.style.setProperty('--ty', (((r - hr) / d) * push) + 'px');
+        }
         el.classList.add('zoomed', 'moving'); // GPU layer while animating
         active.push(el);
       }
@@ -90,10 +114,29 @@ function cellAt(e) {
   // Rendered pitch (60px at full size). Derived from the rect so hover
   // tracking stays correct if the grid is scaled to fit the viewport.
   const pitch = rect.width / COLS;
-  const c = Math.floor(x / pitch);
-  const r = Math.floor(y / pitch);
-  if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return null;
-  return { r, c };
+  const k = pitch / 60; // grid px -> rendered px
+  // Nearest transformed cell centre (cells may be pushed outward), so hover
+  // tracking follows the moved cells. Accept within a bit more than half a
+  // pitch so empty gaps between shrunken rings don't grab the pointer.
+  const maxDist = pitch * 0.6;
+  let best = null;
+  let bestD = maxDist;
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const el = cells[r * COLS + c];
+      const tx = (parseFloat(el.style.getPropertyValue('--tx')) || 0) * k;
+      const ty = (parseFloat(el.style.getPropertyValue('--ty')) || 0) * k;
+      const dd = Math.hypot(
+        x - ((c + 0.5) * pitch + tx),
+        y - ((r + 0.5) * pitch + ty)
+      );
+      if (dd < bestD) {
+        bestD = dd;
+        best = { r, c };
+      }
+    }
+  }
+  return best;
 }
 
 grid.addEventListener('mousemove', (e) => {

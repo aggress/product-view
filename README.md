@@ -3,11 +3,10 @@
 A web page for viewing product images: a 20×20 grid of 40px product photos
 (20px gap) on a black background — each cell is a unique image
 (`assets/img-1..400.jpg`, 160×160 random photos). Mousing over an image
-smoothly scales it to 80px (2×) whilst the neighbours smoothly shrink with a
-distance-based falloff
-(40% at 1 cell away, back to 100% at 5 cells, cosine curve — the 1st–4th
-rings all get a graded shrink, and the 40% first ring keeps a clear edge gap
-around the 2× hovered image). Pure HTML/CSS/JS, no libraries.
+smoothly scales it to 160px (4×) whilst the neighbours smoothly shrink and
+move outward radially, clearing a ring around the highlight (cosine falloff:
+scale 40% at 1 cell away back to 100% at 5 cells, push up to 40px at the
+first ring back to 0 at 5 cells). Pure HTML/CSS/JS, no libraries.
 
 Implementation notes:
 
@@ -21,9 +20,12 @@ Implementation notes:
   running (dropped on `transitionend`). This keeps the page light on mobile
   instead of holding 400 persistent compositor layers.
 - Each cell uses its own 160×160px photo (400 unique images, ~2.9MB total)
-  cropped to a circle with `border-radius: 50%`, so every display size —
-  including the 80px hover state — is downscaling from native resolution and
-  stays crisp even on 2× displays.
+  cropped to a circle with `border-radius: 50%`. Cells render at 40px (4×
+  downscale, crisp on 2× displays); the 160px hover state is exactly native
+  resolution at 1× (2× displays upscale it 2×).
+- Hover hit-testing follows the moved cells: it picks the nearest
+  *transformed* cell centre to the pointer (scale-aware), not the static
+  grid slot, so the push-out doesn't desync the hover tracking.
 - The full-size grid is 1180×1180px; on smaller screens (including phones)
   the whole grid is scaled uniformly to fit the viewport, and the hover/touch
   tracking compensates for the scale by deriving cell size from the rendered
