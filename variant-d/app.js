@@ -1,18 +1,19 @@
 // Product view (variant D) — watches, 10x10
-// 10x10 grid of 20px watch previews (10px gap, 30px pitch) on black. Each
+// 10x10 grid of 80px watch previews (40px gap, 120px pitch) on black. Each
 // cell is a unique circular crop of a watch face (assets/watch-1..100.png,
 // 320x320, pre-cropped from watch_raw with the dial filling ~70% of the
 // circle so there is breathing room around it).
-// Hovering/touching a watch scales it smoothly to 160px (8x) whilst the
+// Hovering/touching a watch scales it smoothly to 320px (4x) whilst the
 // neighbourhood both shrinks and moves outward radially to make room:
-// - scale: cosine falloff from 30% at 1 cell away back to 100% at 6 cells,
+// - scale: cosine falloff from 20% at 1 cell away back to 100% at 6 cells,
 //   Euclidean distance so diagonals shrink a touch less than straight
 //   neighbours.
-// - push: 63px at 1 cell away, decaying as 63*(1-t)^1.45 with t =
-//   (r-30)/120 in grid px, back to 0 at 5 cells. Straight neighbours end up
-//   at ~93/102/113/128/150/180px from the hovered centre, so every ring
-//   keeps a positive edge gap to the 80px-radius highlight (10px at the
-//   first ring, ~2px through the mid rings, 10px+ out to the tail).
+// - push: a 68px plateau out to 4 cells (the 160px-radius highlight is
+//   bigger than the pitch, so the whole inner neighbourhood has to be
+//   displaced past it), tapering to 40px at 5 cells and 0 at 6. Straight
+//   neighbours end up at ~188/308/428/548/640/720px from the hovered
+//   centre; every ring keeps a positive edge gap (min 3px, worst case at
+//   the taper zone by the grid edge).
 // Hit-testing follows the moved cells: the hovered cell is the nearest
 // transformed cell centre to the pointer (scaled for the fit transform).
 // All motion is CSS transform + a 300ms cubic-bezier(0.4, 0, 0.2, 1)
@@ -22,12 +23,12 @@
 
 const COLS = 10;
 const ROWS = 10;
-const PITCH = 30; // grid px (20px cell + 10px gap)
-const HOVER_SCALE = 8; // hovered watch scales to 160px
-const FADE_MIN = 0.3; // scale at 1 cell distance
+const PITCH = 120; // grid px (80px cell + 40px gap)
+const HOVER_SCALE = 4; // hovered watch scales to 320px
+const FADE_MIN = 0.2; // scale at 1 cell distance
 const FADE_MAX_DIST = 6; // distance at which watches are back to full size
-const PUSH_MAX = 63; // grid px outward push at 1 cell distance
-const PUSH_TAIL = 5; // cells; push is 0 beyond this distance
+const PUSH_PLATEAU = 68; // grid px outward push, held out to 4 cells away
+const PUSH_TAIL = 6; // cells; push is 0 at this distance
 
 const grid = document.getElementById('grid');
 const stage = document.querySelector('.stage');
@@ -37,8 +38,8 @@ for (let i = 0; i < ROWS * COLS; i++) {
   const img = document.createElement('img');
   img.className = 'cell';
   img.src = 'assets/watch-' + (i + 1) + '.png';
-  img.width = 20;
-  img.height = 20;
+  img.width = 80;
+  img.height = 80;
   img.draggable = false;
   img.alt = '';
   grid.appendChild(img);
@@ -61,14 +62,15 @@ function targetScale(r, c, hr, hc) {
 }
 
 // Outward push in grid px for a cell at distance d (cells) from the hovered
-// one. Steep just outside the 80px-radius highlight (so the first ring
-// clears it), then a long gentle tail so full-size watches further out never
-// crowd each other.
+// one. The 160px-radius highlight is bigger than one pitch, so every cell
+// out to ~4 cells has to be displaced past it: a 68px plateau, then a
+// linear taper (68 -> 40 over cells 4-5, 40 -> 0 over cells 5-6) so the
+// displaced band blends smoothly back into the static grid.
 function targetPush(d) {
   const r = d * PITCH;
-  if (r >= PUSH_TAIL * PITCH) return 0;
-  const t = Math.max(0, (r - PITCH) / (PUSH_TAIL * PITCH - PITCH));
-  return PUSH_MAX * Math.pow(1 - t, 1.45);
+  if (r <= 4 * PITCH) return PUSH_PLATEAU;
+  if (r <= 5 * PITCH) return PUSH_PLATEAU - 28 * (r - 4 * PITCH) / PITCH;
+  return Math.max(0, 40 * (1 - (r - 5 * PITCH) / PITCH));
 }
 
 let active = []; // cells currently carrying a non-default transform

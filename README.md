@@ -15,15 +15,17 @@ Open `variant-c/index.html` in a browser.
 
 ## variant-d — watches
 
-A 10×10 grid of 20px watch previews (10px gap) — each cell is a unique
+A 10×10 grid of 80px watch previews (40px gap) — each cell is a unique
 circular crop of a watch face (`assets/watch-1..100.png`, 320×320 PNGs
 generated from `variant-c/assets/watch_raw/`, dial filling ~70% of the circle
 so there is breathing room around it). Touching/hovering a watch scales it
-smoothly to 160px (8×) whilst the neighbourhood shrinks *and* moves outward
-radially: scale falls off from 30% at 1 cell away to 100% at 6 cells (cosine,
-Euclidean distance), and the radial push runs 63px at 1 cell away back to 0
-at 5 cells. Every ring keeps a positive edge gap to the 80px-radius
-highlight. Open `variant-d/index.html` in a browser.
+smoothly to 320px (4×) whilst the neighbourhood shrinks *and* moves outward
+radially: scale falls off from 20% at 1 cell away to 100% at 6 cells (cosine,
+Euclidean distance), and the radial push is a 68px plateau out to 4 cells
+(the 160px-radius highlight is bigger than the pitch, so the whole inner
+neighbourhood is displaced past it) tapering back to 0 at 6 cells. Every ring
+keeps a positive edge gap (min 3px). Open `variant-d/index.html` in a
+browser.
 
 ## shared implementation notes
 
