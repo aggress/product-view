@@ -1,11 +1,11 @@
 // Product view — smooth hover zoom
 // 20x20 grid of 40px circles (20px gap) on black. Hovering a circle scales it
 // smoothly to 80px (2x) whilst the neighbourhood shrinks with a smooth,
-// distance-based falloff: a cosine curve from 50% at 1 cell away back to 100%
-// at 5 cells, so the 1st-4th rings all get a graded shrink (50%, ~57%, 75%,
-// ~93%) using Euclidean distance, so diagonals shrink a touch less than
-// straight neighbours. The 50% first ring keeps a 10px edge gap between the
-// 2x hovered circle (40px radius) and its neighbours (10px radius) on the
+// distance-based falloff: a cosine curve from 40% at 1 cell away back to 100%
+// at 5 cells, so the 1st-4th rings all get a graded shrink (40%, ~49%, 70%,
+// ~91%) using Euclidean distance, so diagonals shrink a touch less than
+// straight neighbours. The 40% first ring keeps a 12px edge gap between the
+// 2x hovered circle (40px radius) and its neighbours (8px radius) on the
 // 60px pitch. Zero slope at both ends of the curve, so no ring
 // of cells visibly "snaps" into or out of the effect.
 // All motion is CSS transform + a 300ms cubic-bezier(0.4, 0, 0.2, 1)
@@ -16,7 +16,7 @@
 const COLS = 20;
 const ROWS = 20;
 const RADIUS = 5; // cells affected beyond the hovered one
-const FADE_MIN = 0.5; // scale at 1 cell distance
+const FADE_MIN = 0.4; // scale at 1 cell distance
 const FADE_MAX_DIST = 5; // distance at which circles are back to full size
 
 const grid = document.getElementById('grid');

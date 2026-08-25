@@ -3,8 +3,8 @@
 A web page for viewing product images: a 20×20 grid of 40px white circle PNGs
 (20px gap) on a black background. Mousing over a circle smoothly scales it to
 80px (2×) whilst the neighbours smoothly shrink with a distance-based falloff
-(50% at 1 cell away, back to 100% at 5 cells, cosine curve — the 1st–4th
-rings all get a graded shrink, and the 50% first ring keeps a clear edge gap
+(40% at 1 cell away, back to 100% at 5 cells, cosine curve — the 1st–4th
+rings all get a graded shrink, and the 40% first ring keeps a clear edge gap
 around the 2× hovered circle). Pure HTML/CSS/JS, no libraries.
 
 Implementation notes:
