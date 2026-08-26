@@ -3,7 +3,7 @@
 // unique circular crop of a watch face (assets/watch-1..100.png, 320x320,
 // pre-cropped from watch_raw with the dial filling ~70% of the circle so
 // there is breathing room around it).
-// Hovering/touching a watch scales it smoothly to 360px (4.5x, 180px radius)
+// Hovering/touching a watch scales it smoothly to 340px (4.25x, 170px radius)
 // whilst the neighbourhood both shrinks and moves outward radially to make
 // room, in per-ring steps (ring = ceil of Euclidean distance, so straight
 // and diagonal neighbours of a ring share values):
@@ -27,7 +27,7 @@
 const COLS = 10;
 const ROWS = 10;
 const RADIUS = 5; // cells affected beyond the hovered one
-const HOVER_SCALE = 4.5; // hovered cell scales to 360px
+const HOVER_SCALE = 4.25; // hovered cell scales to 340px
 const FADE_MAX_DIST = 5; // distance at which cells are back to full size/position
 
 // Per-ring values (ring = ceil of Euclidean cell distance). Rings 4-5
