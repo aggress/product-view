@@ -34,7 +34,7 @@ const FADE_MAX_DIST = 5; // distance at which cells are back to full size/positi
 // fade cosine from the ring-3 values to 100% scale / 0px push at 5 cells.
 const RINGS = [
   null,
-  { s: 0.8, push: 140 }, // ring 1: 80% size, 140px outward push
+  { s: 0.8, push: 180 }, // ring 1: 80% size, 180px outward push
   { s: 0.488, push: 68 }, // ring 2
   { s: 0.7, push: 40 }, // ring 3
 ];
