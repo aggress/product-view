@@ -37,7 +37,7 @@ const FADE_MAX_DIST = 5; // distance at which cells are back to full size/positi
 // are the outward pushes in grid px for cells beside vs above/below.
 const RINGS = [
   null,
-  { s: 0.8, pushH: 80, pushV: 120 }, // ring 1
+  { s: 0.8, pushH: 80, pushV: 160 }, // ring 1
   { s: 0.488, pushH: 68, pushV: 68 }, // ring 2
   { s: 0.7, pushH: 40, pushV: 40 }, // ring 3
 ];
