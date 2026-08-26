@@ -3,20 +3,18 @@
 // unique circular crop of a watch face (assets/watch-1..100.png, 320x320,
 // pre-cropped from watch_raw with the dial filling ~70% of the circle so
 // there is breathing room around it).
-// Same geometry as variant-c, scaled 2x: hovering/touching a watch scales it
-// smoothly to 320px (4x, 160px radius) whilst the neighbourhood both shrinks
-// and moves outward radially to make room:
-// - scale: cosine falloff from 40% at 1 cell away back to 100% at 5 cells
-//   (40%, ~49%, 70%, ~91%, 100%), Euclidean distance so diagonals shrink a
-//   touch less than straight neighbours.
-// - push: cosine bump of up to 80px at 1 cell away, back to 0 at 5 cells
-//   (80, ~68, 40, ~12, 0), so the straight neighbours end up at
-//   200/308/400/492/600px from the hovered centre with a 24px edge gap to
-//   the 160px-radius highlight and 24px minimum gap between rings.
+// Hovering/touching a watch scales it smoothly to 320px (4x, 160px radius)
+// whilst the neighbourhood both shrinks and moves outward radially to make
+// room, in per-ring steps (ring = ceil of Euclidean distance, so straight
+// and diagonal neighbours of a ring share values):
+// - RINGS[1..3] hold the tuned scale + radial push for rings 1-3 (defaults
+//   40%/80px, 49%/68px, 70%/40px). The on-page tuning panel edits these
+//   live; the confirmed values are hardcoded back into RINGS below.
+// - Rings 4-5 continue with a cosine fade from the ring-3 values to
+//   100% / 0px at 5 cells, so no ring visibly "snaps" into or out of the
+//   effect.
 // (Diagonal cells sit partly under the enlarged highlight, which renders on
 // top via z-index — same as variant-c.)
-// Zero slope at both ends of both curves, so no ring of cells visibly
-// "snaps" into or out of the effect.
 // Hit-testing follows the moved cells: the hovered cell is the nearest
 // transformed cell centre to the pointer (scaled for the fit transform).
 // All motion is CSS transform + a 300ms cubic-bezier(0.4, 0, 0.2, 1)
@@ -28,9 +26,17 @@ const COLS = 10;
 const ROWS = 10;
 const RADIUS = 5; // cells affected beyond the hovered one
 const HOVER_SCALE = 4; // hovered cell scales to 320px
-const FADE_MIN = 0.4; // scale at 1 cell distance
 const FADE_MAX_DIST = 5; // distance at which cells are back to full size/position
-const PUSH_MAX = 80; // px outward push of the first ring (clears the 160px-radius highlight)
+
+// Per-ring tuning values (ring = ceil of Euclidean cell distance). Rings
+// 4-5 fade cosine from the ring-3 values to 100% scale / 0px push at 5
+// cells. The tuning panel edits these live.
+const RINGS = [
+  null,
+  { s: 0.4, push: 80 }, // ring 1: 40% size, 80px outward push
+  { s: 0.488, push: 68 }, // ring 2
+  { s: 0.7, push: 40 }, // ring 3
+];
 
 const grid = document.getElementById('grid');
 const stage = document.querySelector('.stage');
@@ -57,18 +63,23 @@ function targetScale(r, c, hr, hc) {
   if (dr === 0 && dc === 0) return HOVER_SCALE;
   const d = Math.hypot(dr, dc);
   if (d >= FADE_MAX_DIST) return 1;
-  // Smooth cosine falloff: FADE_MIN at d=1 -> 1.0 at d=FADE_MAX_DIST.
-  const t = (d - 1) / (FADE_MAX_DIST - 1);
-  const s = 1 - (1 - FADE_MIN) * 0.5 * (1 + Math.cos(Math.PI * t));
+  const ring = Math.ceil(d);
+  if (ring <= 3) return RINGS[ring].s;
+  // Rings 4-5: cosine fade from the ring-3 size to 100% at d=FADE_MAX_DIST.
+  const t = (d - 3) / (FADE_MAX_DIST - 3);
+  const s0 = RINGS[3].s;
+  const s = s0 + (1 - s0) * 0.5 * (1 - Math.cos(Math.PI * t));
   return Math.round(s * 1000) / 1000;
 }
 
 // Outward push in grid px for a cell at distance d (cells) from the hovered
-// one: cosine bump, PUSH_MAX at d=1 -> 0 at d=FADE_MAX_DIST.
+// one: ring values 1-3, then a cosine fade to 0 at d=FADE_MAX_DIST.
 function targetPush(d) {
   if (d <= 0 || d >= FADE_MAX_DIST) return 0;
-  const t = (d - 1) / (FADE_MAX_DIST - 1);
-  return PUSH_MAX * 0.5 * (1 + Math.cos(Math.PI * t));
+  const ring = Math.ceil(d);
+  if (ring <= 3) return RINGS[ring].push;
+  const t = (d - 3) / (FADE_MAX_DIST - 3);
+  return RINGS[3].push * 0.5 * (1 + Math.cos(Math.PI * t));
 }
 
 let active = []; // cells currently carrying a non-default scale
@@ -192,3 +203,71 @@ function fit() {
 
 window.addEventListener('resize', fit);
 fit();
+
+// --- Tuning panel: live sliders + numerical readouts for rings 1-3 ---
+// Lets the ring size (scale) and distance (radial push) be tested manually;
+// the confirmed values are then hardcoded back into RINGS above and the
+// panel removed.
+const PITCH = 120; // grid px per cell (80px cell + 40px gap)
+const HIGHLIGHT_R = HOVER_SCALE * 40; // 160px radius of the enlarged cell
+
+const panel = document.getElementById('panel');
+const panelRows = [];
+
+function refreshStats() {
+  for (let k = 1; k <= 3; k++) {
+    const row = panelRows[k];
+    const { s, push } = RINGS[k];
+    const size = 80 * s; // rendered px at full grid scale
+    const centre = PITCH * k + push; // straight neighbour centre distance
+    const gap = centre - HIGHLIGHT_R - size / 2; // edge gap to highlight
+    row.sVal.textContent = Math.round(100 * s) + '%';
+    row.pVal.textContent = Math.round(push) + 'px';
+    row.stats.textContent =
+      Math.round(size) + 'px wide • ' +
+      Math.round(centre) + 'px from centre • ' +
+      Math.round(gap) + 'px gap to highlight';
+  }
+}
+
+function reapply() {
+  if (current === null) return;
+  const [r, c] = current.split(',').map(Number);
+  apply(r, c);
+}
+
+for (let k = 1; k <= 3; k++) {
+  const ring = document.createElement('div');
+  ring.className = 'ring';
+  ring.innerHTML =
+    '<h3>Ring ' + k + '</h3>' +
+    '<div class="row"><label>size</label>' +
+    '<input type="range" min="10" max="100" step="1" aria-label="Ring ' + k + ' size">' +
+    '<span class="val"></span></div>' +
+    '<div class="row"><label>push</label>' +
+    '<input type="range" min="0" max="120" step="1" aria-label="Ring ' + k + ' push">' +
+    '<span class="val"></span></div>' +
+    '<div class="stats"></div>';
+  const sInput = ring.querySelectorAll('input')[0];
+  const pInput = ring.querySelectorAll('input')[1];
+  const row = {
+    sVal: ring.querySelectorAll('.val')[0],
+    pVal: ring.querySelectorAll('.val')[1],
+    stats: ring.querySelector('.stats'),
+  };
+  sInput.value = Math.round(100 * RINGS[k].s);
+  pInput.value = Math.round(RINGS[k].push);
+  sInput.addEventListener('input', () => {
+    RINGS[k].s = sInput.value / 100;
+    refreshStats();
+    reapply();
+  });
+  pInput.addEventListener('input', () => {
+    RINGS[k].push = Number(pInput.value);
+    refreshStats();
+    reapply();
+  });
+  panelRows[k] = row;
+  panel.appendChild(ring);
+}
+refreshStats();

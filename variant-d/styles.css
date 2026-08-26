@@ -55,3 +55,67 @@ body {
   color: #555;
   letter-spacing: 0.04em;
 }
+
+/* Tuning panel: live sliders + numerical readouts for ring 1-3 size and
+   push distance. Temporary tooling — removed once the values are confirmed
+   and hardcoded in app.js. */
+.panel {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  width: 272px;
+  padding: 12px 14px;
+  background: rgba(18, 18, 18, 0.92);
+  border: 1px solid #333;
+  border-radius: 8px;
+  font: 12px/1.5 system-ui, sans-serif;
+  color: #ddd;
+}
+
+.panel h2 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #aaa;
+}
+
+.panel .ring {
+  margin-bottom: 10px;
+}
+
+.panel .ring h3 {
+  margin: 0 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.panel .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel .row label {
+  width: 32px;
+  color: #999;
+}
+
+.panel input[type="range"] {
+  flex: 1;
+  margin: 0;
+}
+
+.panel .val {
+  width: 40px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel .stats {
+  margin-top: 2px;
+  color: #888;
+  font-variant-numeric: tabular-nums;
+}
