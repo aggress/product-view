@@ -8,7 +8,7 @@
 // room, in per-ring steps (ring = ceil of Euclidean distance, so straight
 // and diagonal neighbours of a ring share values):
 // - RINGS[1..3] hold the tuned scale + radial push for rings 1-3 (defaults
-//   40%/80px, 49%/68px, 70%/40px). The on-page tuning panel edits these
+//   80%/80px, 49%/68px, 70%/40px). The on-page tuning panel edits these
 //   live; the confirmed values are hardcoded back into RINGS below.
 // - Rings 4-5 continue with a cosine fade from the ring-3 values to
 //   100% / 0px at 5 cells, so no ring visibly "snaps" into or out of the
@@ -33,7 +33,7 @@ const FADE_MAX_DIST = 5; // distance at which cells are back to full size/positi
 // cells. The tuning panel edits these live.
 const RINGS = [
   null,
-  { s: 0.4, push: 80 }, // ring 1: 40% size, 80px outward push
+  { s: 0.8, push: 80 }, // ring 1: 80% size, 80px outward push
   { s: 0.488, push: 68 }, // ring 2
   { s: 0.7, push: 40 }, // ring 3
 ];

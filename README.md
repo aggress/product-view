@@ -21,7 +21,7 @@ generated from `variant-c/assets/watch_raw/`, dial filling ~70% of the circle
 so there is breathing room around it). Touching/hovering a watch scales it
 smoothly to 320px (4×) whilst the neighbourhood shrinks *and* moves outward
 radially, in per-ring steps (ring = ceil of Euclidean cell distance: ring 1
-40% size + 80px push, ring 2 49% + 68px, ring 3 70% + 40px, rings 4–5
+80% size + 80px push, ring 2 49% + 68px, ring 3 70% + 40px, rings 4–5
 fading cosine to 100% / 0px at 5 cells), clearing the 160px-radius highlight
 with a ≥24px edge gap. A temporary tuning panel (top-left) exposes sliders
 with numerical readouts for the ring 1–3 size and push so the values can be
