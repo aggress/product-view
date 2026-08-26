@@ -32,11 +32,14 @@ const FADE_MAX_DIST = 5; // distance at which cells are back to full size/positi
 
 // Per-ring values (ring = ceil of Euclidean cell distance). Rings 4-5
 // fade cosine from the ring-3 values to 100% scale / 0px push at 5 cells.
+// Push is anisotropic: the watch images are tall and narrow, so equal
+// padding looks cramped vertically and loose horizontally. pushH / pushV
+// are the outward pushes in grid px for cells beside vs above/below.
 const RINGS = [
   null,
-  { s: 0.8, push: 80 }, // ring 1: 80% size, 80px outward push
-  { s: 0.488, push: 68 }, // ring 2
-  { s: 0.7, push: 40 }, // ring 3
+  { s: 0.8, pushH: 80, pushV: 120 }, // ring 1
+  { s: 0.488, pushH: 68, pushV: 68 }, // ring 2
+  { s: 0.7, pushH: 40, pushV: 40 }, // ring 3
 ];
 
 const grid = document.getElementById('grid');
@@ -112,13 +115,15 @@ function targetScale(r, c, hr, hc) {
 }
 
 // Outward push in grid px for a cell at distance d (cells) from the hovered
-// one: ring values 1-3, then a cosine fade to 0 at d=FADE_MAX_DIST.
+// one, separately per axis: ring values 1-3, then a cosine fade to 0 at
+// d=FADE_MAX_DIST.
 function targetPush(d) {
-  if (d <= 0 || d >= FADE_MAX_DIST) return 0;
+  if (d <= 0 || d >= FADE_MAX_DIST) return { x: 0, y: 0 };
   const ring = Math.ceil(d);
-  if (ring <= 3) return RINGS[ring].push;
+  if (ring <= 3) return { x: RINGS[ring].pushH, y: RINGS[ring].pushV };
   const t = (d - 3) / (FADE_MAX_DIST - 3);
-  return RINGS[3].push * 0.5 * (1 + Math.cos(Math.PI * t));
+  const f = 0.5 * (1 + Math.cos(Math.PI * t));
+  return { x: RINGS[3].pushH * f, y: RINGS[3].pushV * f };
 }
 
 let active = []; // cells currently carrying a non-default scale
@@ -146,13 +151,16 @@ function apply(hr, hc) {
       if (s !== 1) {
         const el = at(r, c);
         el.style.setProperty('--s', s);
-        // Push the cell radially away from the hovered one (grid px). The
-        // hovered cell itself (d=0) is never pushed.
+        // Push the cell radially away from the hovered one (grid px), with
+        // separate horizontal/vertical amounts (see RINGS). The hovered
+        // cell itself (d=0) is never pushed.
         const d = Math.hypot(r - hr, c - hc);
         const push = targetPush(d);
-        if (push > 0) {
-          el.style.setProperty('--tx', (((c - hc) / d) * push) + 'px');
-          el.style.setProperty('--ty', (((r - hr) / d) * push) + 'px');
+        if (push.x > 0 || push.y > 0) {
+          if (push.x > 0)
+            el.style.setProperty('--tx', (((c - hc) / d) * push.x) + 'px');
+          if (push.y > 0)
+            el.style.setProperty('--ty', (((r - hr) / d) * push.y) + 'px');
         }
         el.classList.add('zoomed', 'moving'); // GPU layer while animating
         active.push(el);
