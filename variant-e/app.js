@@ -3,7 +3,7 @@
 // unique circular crop of a watch face (assets/watch-1..100.png, 320x320,
 // pre-cropped from watch_raw with the dial filling ~70% of the circle so
 // there is breathing room around it).
-// Hovering/touching a watch scales it smoothly to 400px (5x, 200px radius)
+// Hovering/touching a watch scales it smoothly to 360px (4.5x, 180px radius)
 // whilst the neighbourhood both shrinks and moves outward radially to make
 // room, in per-ring steps (ring = ceil of Euclidean distance, so straight
 // and diagonal neighbours of a ring share values):
@@ -16,9 +16,9 @@
 // top via z-index — same as variant-c.)
 // Hit-testing follows the moved cells: the hovered cell is the nearest
 // transformed cell centre to the pointer (scaled for the fit transform).
-// Clicking a watch shows it at 800px in the middle of the grid; it hides
-// when the image is clicked again, any key is pressed, or the mouse moves
-// towards any of the 4 edges of the grid.
+// Clicking a watch shows it at 800px in the middle of the grid, on a
+// full-screen layer that blocks all interaction with the grid behind it;
+// it hides when the layer (or the image) is clicked or any key is pressed.
 // All motion is CSS transform + a 300ms cubic-bezier(0.4, 0, 0.2, 1)
 // transition (GPU composited). Works with mouse hover and touch.
 // GPU layers (will-change) are only held while cells animate, so the page
@@ -27,7 +27,7 @@
 const COLS = 10;
 const ROWS = 10;
 const RADIUS = 5; // cells affected beyond the hovered one
-const HOVER_SCALE = 5; // hovered cell scales to 400px
+const HOVER_SCALE = 4.5; // hovered cell scales to 360px
 const FADE_MAX_DIST = 5; // distance at which cells are back to full size/position
 
 // Per-ring values (ring = ceil of Euclidean cell distance). Rings 4-5
@@ -55,16 +55,17 @@ for (let i = 0; i < ROWS * COLS; i++) {
   cells.push(img);
 }
 
-// Large view: 800px render of the clicked watch, centred on the grid.
-// Lives inside the grid so it inherits the stage fit-transform and sits at
-// the true grid centre.
+// Large view: 800px render of the clicked watch on a full-screen layer.
+// The layer covers the whole viewport, so while it is open no mouse event
+// reaches the grid (no hover-zoom, no clicks) — the user must click the
+// layer or press a key to dismiss it.
 const big = document.createElement('div');
 big.className = 'big';
 const bigImg = document.createElement('img');
 bigImg.alt = '';
 bigImg.draggable = false;
 big.appendChild(bigImg);
-grid.appendChild(big);
+document.body.appendChild(big);
 let bigCell = null; // index of the cell currently shown large
 
 function showBig(i) {
@@ -80,39 +81,17 @@ function hideBig() {
   big.classList.remove('on');
 }
 
-// Clicking the large image closes it (stopPropagation keeps the grid
-// click handler from immediately re-opening the same watch).
-big.addEventListener('click', (e) => {
-  e.stopPropagation();
-  hideBig();
-});
+// Clicking anywhere on the layer (image or background) closes it.
+big.addEventListener('click', hideBig);
 
 grid.addEventListener('click', (e) => {
   const cell = cellAt(e);
   if (!cell) return;
-  const i = cell.r * COLS + cell.c;
-  if (bigCell === i) hideBig();
-  else showBig(i);
+  showBig(cell.r * COLS + cell.c);
 });
 
 // Any key press closes the large view.
 window.addEventListener('keydown', hideBig);
-
-// Moving the mouse towards any of the 4 edges of the grid closes it.
-// The rect is the rendered (fit-scaled) one, so the threshold is screen px.
-const EDGE_DIST = 48;
-window.addEventListener('mousemove', (e) => {
-  if (bigCell === null) return;
-  const rect = grid.getBoundingClientRect();
-  if (
-    e.clientX < rect.left + EDGE_DIST ||
-    e.clientX > rect.right - EDGE_DIST ||
-    e.clientY < rect.top + EDGE_DIST ||
-    e.clientY > rect.bottom - EDGE_DIST
-  ) {
-    hideBig();
-  }
-});
 
 const at = (r, c) => cells[r * COLS + c];
 
