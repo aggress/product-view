@@ -1,8 +1,11 @@
 // Product view (variant D) — watches, 10x10
 // 10x10 grid of 80px watch previews (40px gap) on black. Each cell is a
-// unique circular crop of a watch face (assets/watch-1..100.png, 320x320,
+// unique circular crop of a watch face (assets/watch-1..100.jpg, 720x720,
 // pre-cropped from watch_raw with the dial filling ~70% of the circle so
-// there is breathing room around it).
+// there is breathing room around it; flattened onto black, which is
+// invisible since the page background is #000). Each click-to-open watch
+// has a larger sibling (watch-N-lg.jpg, 1600x1600) that is only loaded
+// when the big view opens.
 // Hovering/touching a watch scales it smoothly to 340px (4.25x, 170px radius)
 // whilst the neighbourhood both shrinks and moves outward radially to make
 // room, in per-ring steps (ring = ceil of Euclidean distance, so straight
@@ -49,9 +52,10 @@ const cells = [];
 for (let i = 0; i < ROWS * COLS; i++) {
   const img = document.createElement('img');
   img.className = 'cell';
-  img.src = 'assets/watch-' + (i + 1) + '.png';
+  img.src = 'assets/watch-' + (i + 1) + '.jpg';
   img.width = 80;
   img.height = 80;
+  img.decoding = 'async';
   img.draggable = false;
   img.alt = '';
   grid.appendChild(img);
@@ -59,9 +63,11 @@ for (let i = 0; i < ROWS * COLS; i++) {
 }
 
 // Large view: 800px render of the clicked watch on a full-screen layer.
-// The layer covers the whole viewport, so while it is open no mouse event
-// reaches the grid (no hover-zoom, no clicks) — the user must click the
-// layer or press a key to dismiss it.
+// The big view loads the higher-resolution watch-N-lg.jpg on demand (the
+// 720px grid image is only upscaled ~11%, which would look soft at 800px
+// on a 2x display). The layer covers the whole viewport, so while it is
+// open no mouse event reaches the grid (no hover-zoom, no clicks) — the
+// user must click the layer or press a key to dismiss it.
 const big = document.createElement('div');
 big.className = 'big';
 const bigImg = document.createElement('img');
@@ -74,7 +80,7 @@ let bigCell = null; // index of the cell currently shown large
 function showBig(i) {
   if (bigCell === i) return;
   bigCell = i;
-  bigImg.src = cells[i].src;
+  bigImg.src = 'assets/watch-' + (i + 1) + '-lg.jpg';
   big.classList.add('on');
 }
 
