@@ -243,17 +243,30 @@ grid.addEventListener('transitionend', (e) => {
   if (e.target.classList) e.target.classList.remove('moving');
 });
 
-// The full-size grid is 1160x1160px; scale the whole stage down (uniformly)
-// when it would not fit on screen.
+// The full-size grid is 1160x1160px; scale the whole stage down
+// (uniformly) when it would not fit on screen, including the caption row
+// below it. Centre alignment itself is pure CSS (see .stage in
+// styles.css), so the grid always sits at the centre of the visible
+// window. --fit is set as a CSS variable because the element's transform
+// already carries the centering translate.
+const caption = document.querySelector('.caption');
+
 function fit() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const captionH = caption ? caption.offsetHeight + 24 : 0;
   const s = Math.min(
     1,
-    (window.innerWidth - 32) / stage.offsetWidth,
-    (window.innerHeight - 32) / stage.offsetHeight
+    (w - 32) / stage.offsetWidth,
+    (h - 32) / (stage.offsetHeight + captionH)
   );
-  stage.style.transform = s < 1 ? 'scale(' + s + ')' : '';
+  stage.style.setProperty('--fit', String(s));
 }
 
 window.addEventListener('resize', fit);
+// Mobile browsers resize the *visual* viewport (address bar collapsing,
+// pinch) without always firing window resize; track it when available.
+if (window.visualViewport)
+  window.visualViewport.addEventListener('resize', fit);
 fit();
 

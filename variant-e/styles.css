@@ -16,10 +16,18 @@ body {
   overflow: hidden;
 }
 
+/* The stage box is exactly the grid. It is pinned to the centre of the
+   visible window (top/left 50% + translate -50%), which stays correct no
+   matter how big the grid's layout box is or how the mobile browser
+   chrome changes the viewport; --fit (set by app.js) shrinks the whole
+   stage when the grid would not fit. */
 .stage {
   display: grid;
   justify-items: center;
-  gap: 24px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(var(--fit, 1));
 }
 
 .grid {
@@ -50,7 +58,14 @@ body {
   z-index: 2;
 }
 
+/* Kept out of the stage's flow (absolute, below the grid) so the stage
+   box is exactly the grid and the grid centre sits exactly at the window
+   centre. Scaled with the stage via the parent transform. */
 .caption {
+  position: absolute;
+  top: 100%;
+  margin-top: 24px;
+  white-space: nowrap;
   font: 13px/1.4 system-ui, sans-serif;
   color: #555;
   letter-spacing: 0.04em;
